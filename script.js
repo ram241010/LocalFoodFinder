@@ -1,55 +1,141 @@
-const API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'; // Replace with your Google Maps API key
-const locationInput = document.getElementById('locationInput');
-const findFoodBtn = document.getElementById('findFoodBtn');
-const foodResults = document.getElementById('foodResults');
+let map;
+let service;
+let infowindow;
+let currentLocation;
 
-// Function to fetch nearby food places
-findFoodBtn.addEventListener('click', async () => {
-  const location = locationInput.value;
-  if (!location) {
-    alert('Please enter a location.');
-    return;
-  }
+function initMap() {
+    // Default location (for the initial map load)
+    currentLocation = { lat: -33.866, lng: 151.196 };
 
-  try {
-    const geocodeResponse = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${API_KEY}`
-    );
-    const geocodeData = await geocodeResponse.json();
-    const { lat, lng } = geocodeData.results[0].geometry.location;
+    map = new google.maps.Map(document.getElementById('map'), {
+        center: currentLocation,
+        zoom: 15,
+    });
 
-    const placesResponse = await fetch(
-      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=2000&type=restaurant&key=${API_KEY}`
-    );
-    const placesData = await placesResponse.json();
+    const request = {
+        location: currentLocation,
+        radius: '500',
+        type: ['restaurant'],
+    };
 
-    displayResults(placesData.results);
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    foodResults.innerHTML = `<p>Something went wrong. Please try again.</p>`;
-  }
-});
+    service = new google.maps.places.PlacesService(map);
+    service.nearbySearch(request, callback);
+}
 
-// Function to display results
-function displayResults(places) {
-  foodResults.innerHTML = '';
-  if (places.length === 0) {
-    foodResults.innerHTML = '<p>No food places found nearby.</p>';
-    return;
-  }
+function callback(results, status) {
+    if (status === google.maps.places.PlacesServiceStatus.OK) {
+        infowindow = new google.maps.InfoWindow();
 
-  places.forEach((place) => {
-    const { name, vicinity, photos } = place;
-    const photoURL = photos
-      ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photos[0].photo_reference}&key=${API_KEY}`
-      : 'https://via.placeholder.com/150';
+        results.forEach((place) => {
+            const marker = new google.maps.Marker({
+                map: map,
+                position: place.geometry.location,
+            });
 
-    foodResults.innerHTML += `
-      <div style="margin-bottom: 20px; padding: 10px; border-bottom: 1px solid #ddd;">
-        <img src="${photoURL}" alt="${name}" style="width: 100%; max-height: 200px; object-fit: cover;">
-        <h3>${name}</h3>
-        <p>${vicinity}</p>
-      </div>
-    `;
-  });
+            google.maps.event.addListener(marker, 'click', () => {
+                infowindow.setContent(place.name);
+                infowindow.open(map, marker);
+            });
+        });
+    }
+}
+
+function findTop5Foods() {
+    const userLocation = map.getCenter();
+    const request = {
+        location: userLocation,
+        radius: '500',
+        type: ['restaurant'],
+    };
+
+    service.nearbySearch(request, (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+            infowindow = new google.maps.InfoWindow();
+            let counter = 0;
+
+            results.forEach((place) => {
+                if (counter < 5) {
+                    const marker = new google.maps.Marker({
+                        map: map,
+                        position: place.geometry.location,
+                    });
+
+                    google.maps.event.addListener(marker, 'click', () => {
+                        infowindow.setContent(place.name);
+                        infowindow.open(map, marker);
+                    });
+
+                    counter++;
+                }
+            });
+        }
+    });
+}
+
+function findBestFoods() {
+    const userLocation = map.getCenter();
+    const request = {
+        location: userLocation,
+        radius: '1000',
+        type: ['restaurant'],
+    };
+
+    service.nearbySearch(request, (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+            infowindow = new google.maps.InfoWindow();
+            results.sort((a, b) => b.rating - a.rating); // Sorting by rating for "best" places
+
+            results.forEach((place, index) => {
+                if (index < 5) {
+                    const marker = new google.maps.Marker({
+                        map: map,
+                        position: place.geometry.location,
+                    });
+
+                    google.maps.event.addListener(marker, 'click', () => {
+                        infowindow.setContent(place.name);
+                        infowindow.open(map, marker);
+                    });
+                }
+            });
+        }
+    });
+}
+
+function addAddress() {
+    const geocoder = new google.maps.Geocoder();
+    const address = prompt("Enter your address:");
+
+    geocoder.geocode({ 'address': address }, (results, status) => {
+        if (status === google.maps.GeocoderStatus.OK) {
+            map.setCenter(results[0].geometry.location);
+            new google.maps.Marker({
+                map: map,
+                position: results[0].geometry.location,
+            });
+        } else {
+            alert("Geocode was not successful for the following reason: " + status);
+        }
+    });
+}
+
+function getLiveLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+            const pos = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+            };
+
+            map.setCenter(pos);
+
+            new google.maps.Marker({
+                position: pos,
+                map: map,
+                title: "Your Live Location",
+            });
+        });
+    } else {
+        alert("Geolocation is not supported by this browser.");
+    }
 }

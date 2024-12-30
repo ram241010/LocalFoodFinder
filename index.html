@@ -1,18 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Local Food Finder</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cocal Food Finder</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAOVYRIgupAurZup5y1PRh8Ismb1A3lLao&libraries=places&callback=initMap" async defer></script>
 </head>
 <body>
-  <div id="app">
-    <h1>Local Food Finder</h1>
-    <input type="text" id="locationInput" placeholder="Enter your location">
-    <button id="findFoodBtn">Find Food</button>
-    <div id="foodResults"></div>
-  </div>
-  <script src="script.js"></script>
+    <div class="blur-background"></div>
+    <div class="container">
+        <h1>Cocal Food Finder</h1>
+        <p>Find the best food around you using Google Maps</p>
+        <div id="map"></div>
+        <div class="button-container">
+            <button class="cool-button" onclick="findTop5Foods()">Top 5 Nearest Foods</button>
+            <button class="cool-button" onclick="findBestFoods()">Best Nearest Foods</button>
+            <button class="cool-button" onclick="findPlace()">Find Place</button>
+            <button class="cool-button" onclick="addAddress()">Add Your Address</button>
+            <button class="cool-button" onclick="getLiveLocation()">Your Live Location</button>
+        </div>
+    </div>
 </body>
 </html>
